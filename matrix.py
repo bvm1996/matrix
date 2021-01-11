@@ -263,9 +263,25 @@ class TernaryMatrix(SquareMatrix, MGP):
             raise ValueError('non prim')
         n = self.size
         # return 2 * n - v - max(self.du - self.delt, self.nu) - 2
+        if self.nu is None:
+            return 2 * self.size - v - self.du
         return 2 * self.size - v - max(self.du - 2, self.nu) - 2
-        
 
+    def o_dla(self, u, v):
+        if u >= self.dla:
+            print('u ', u, ' is less then dla: ', self.dla)
+            raise ValueError(u)
+        if self.check_primitive() is None:
+            print('not prim')
+            raise ValueError('non prim')
+        add = [self.tau(u) + self.du - 2]
+        if self.nu is not None:
+            add.append(self.tau(u) + self.nu)
+        if self.niu(u) < self.nl:
+            add.append(self.niu(u) + self.du)
+
+        return self.size * 2 - v + u - 1 - max(add)
+        
 
 # def ShiftRegisterMatrix(*col):
 def SRM(*col):
