@@ -1,6 +1,15 @@
 from abc import ABCMeta
 from abc import abstractmethod
 from random import randint
+from random import choice
+
+
+global DEBUG
+DEBUG = False
+
+def printf(*s):
+    if DEBUG:
+        print(*s)
 
 
 class MGP(metaclass=ABCMeta):
@@ -53,7 +62,6 @@ class Matrix:
             new_row = tuple(self.scalar(row, col) for col in cols)
             new_rows.append(new_row)
         rv = self.__class__(new_rows)
-        # print(rv)
         return rv
 
     def __le__(self, other):
@@ -142,25 +150,25 @@ class TernaryMatrix(SquareMatrix, MGP):
         return max(mul(x, y) for x, y in zip(row, col))
 
     def check_nonlin(self):
-        print('NONLIN CHECK:')
+        printf('NONLIN CHECK:')
         A = self
         for i in range(100):
             if self.nonlinear_matrix <= A:
-                print('<2>-alpha epxonent:', i + 1)
+                printf('<2>-alpha epxonent:', i + 1)
                 return i + 1
             A *= self
-        print('not after 100')
+        printf('not after 100')
         return None
 
     def check_primitive(self):
-        print('PRIMITIVE CHECK:')
+        printf('PRIMITIVE CHECK:')
         A = self
         for i in range(100):
             if self.primitive_matrix <= A:
-                print('epxonent:', i + 1)
+                printf('epxonent:', i + 1)
                 return i + 1
             A *= self
-        print('not after 100')
+        printf('not after 100')
         return None
 
     def test_local(self, power, n, m, limit=40):
@@ -179,12 +187,27 @@ class TernaryMatrix(SquareMatrix, MGP):
     def last_col(self):
         return list(self.cols)[-1]
 
+    def reg_state(self):
+        print('  '.join(map(str, self.last_col)))
+        print(' '.join(map(
+            lambda x: str(x[0]).ljust(2),
+            enumerate(self.last_col),
+        )))
+
     @property
     def nl(self):
         for i, el in enumerate(reversed(self.last_col)):
             if el == 2:
                 return self.size - 1 - i
         return None
+
+    @property
+    def n0(self):
+        for i, el in enumerate(self.last_col):
+            if el == 2:
+                return i
+        return None
+
 
     @property
     def delt(self):
@@ -202,20 +225,20 @@ class TernaryMatrix(SquareMatrix, MGP):
     def D(self):
         Ds = [[] for _ in range(self.m)]
         i = -1
-        for el in self.last_col:
+        for num, el in enumerate(self.last_col):
             if el != 0:
                 i += 1
-            Ds[i].append(el)
+            Ds[i].append(num)
         return Ds
 
     @property
     def E(self):
         Es = [[] for _ in range(self.l)]
         i = -1
-        for el in self.last_col:
+        for num, el in enumerate(self.last_col):
             if el == 2:
                 i += 1
-            Es[i].append(el)
+            Es[i].append(num)
         return Es
 
     @property
@@ -347,7 +370,7 @@ class TernaryMatrix(SquareMatrix, MGP):
             return ddu
         return min(ddu, self.size - self.nu)
 
-    def contains(self, u):
+    def does_not_contain(self, u):
         n_to_u = [
             (u - i) % 2 for i, el in
             enumerate(self.last_col[self.niu(u):u + 1])
@@ -355,25 +378,39 @@ class TernaryMatrix(SquareMatrix, MGP):
         ]
         return 0 not in n_to_u or 1 not in n_to_u
 
+    def local_exp_2(self, u, v):
+        if u < self.dla:
+            printf('u < dla')
+            return self.o_dla(u, v)
+        if u == self.size - 1:
+            printf('u = n - 1')
+            return self.u_n_1(v)
+        return self.d_i(u, v)
+
+    @property
+    def exp_2(self):
+        return max(self.local_exp_2(u, 0) for u in range(self.size))
+
     def d_i(self, u, v):
         base = self.size - v + u - 1 - self.tau(u)
-        if self.contains(u):
-            add = [
-                self.delt2,
-                self.hi(u) + 2,
-                self.ksi(u) + self.size - self.du,
-            ]
+        add = [self.delt2, self.hi(u) + 2]
+        if self.does_not_contain(u):
+            if u >= self.n0:
+                add.append(self.ksi(u) + self.size - self.du)
             hdl = self.hi2(u)
             if hdl is not None:
                 add.append(hdl)
-            print('does not contain')
+            printf('does not contain')
             return base + min(add)
-        print('contains')
-        return base + min(
-            max(self.tau(u) - self.niu(u), 2),
-            self.delt2,
-            self.hi(u) + 2,
-        )
+        printf('contains')
+        if u >= self.n0:
+            add.append(self.ksi(u) + 1)
+        return base + min(add)
+            # max(self.tau(u) - self.niu(u), 2),
+#            max(self.ksi(u), 2),
+#            self.delt2,
+#            self.hi(u) + 2,
+#        )
 
 
 # def ShiftRegisterMatrix(*col):
@@ -416,10 +453,38 @@ NUM = 24
 #        ShiftRegisterMatrix(*tuple(delta(x, i, ran) for x in range(NUM)))
 #        ShiftRegisterMatrix(*tuple(undelta(x, i, ran) for x in range(NUM)))
 
-
 def h(m, u, v):
     m.test_local(m.d_i(u, v), u, v)
+
 
 def hdi(m, v):
     for i in range(m.dla, m.nl + 1):
         h(m, i, v)
+
+
+def check(m):
+    return m.exp_2 == m.check_nonlin()
+
+
+def gen_reg_n_2(count=10, limit=30):
+    for _ in range(count):
+        n = randint(3, limit)
+        reg = [randint(0, 2) for _ in range(n)]
+        reg[0] = choice((1, 2))
+        odd = choice([i for i in range(n - 2) if (n - i) % 2 == 1])
+        if odd == n - 2:
+            raise ValueError('n - 2')
+        reg[odd] = choice((1, 2))
+        reg[n - 1] = 0
+        reg[n - 2] = 2
+        print('  '.join(map(str, reg)))
+        if check(SRM(*reg)):
+            print('ok')
+        else:
+            print('error')
+            mat = SRM(*reg)
+            print('exp_2: ', mat.exp_2)
+            print('nonlin check: ', mat.check_nonlin())
+            import pdb; pdb.set_trace()
+            pass
+            return
