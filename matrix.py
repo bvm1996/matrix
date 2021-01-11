@@ -199,12 +199,32 @@ class TernaryMatrix(SquareMatrix, MGP):
         return [el for el in self.last_col if el != 0]
 
     @property
+    def D(self):
+        Ds = [[] for _ in range(self.m)]
+        i = -1
+        for el in self.last_col:
+            if el != 0:
+                i += 1
+            Ds[i].append(el)
+        return Ds
+
+    @property
+    def E(self):
+        Es = [[] for _ in range(self.l)]
+        i = -1
+        for el in self.last_col:
+            if el == 2:
+                i += 1
+            Es[i].append(el)
+        return Es
+
+    @property
     def l(self):
-        return len(self.n)
+        return len(self.n) + 1
 
     @property
     def m(self):
-        return len(self.d)
+        return len(self.d) + 1
 
     @property
     def delta(self):
@@ -279,9 +299,47 @@ class TernaryMatrix(SquareMatrix, MGP):
             add.append(self.tau(u) + self.nu)
         if self.niu(u) < self.nl:
             add.append(self.niu(u) + self.du)
-
         return self.size * 2 - v + u - 1 - max(add)
-        
+
+    def hi(self, u):
+        if u < self.dla:
+            print('condition dla not met ', self.dla)
+            raise ValueError(u)
+        els = self.last_col[:u + 1]
+        a = None
+        b = None
+        for i, el in enumerate(reversed(els)):
+            if el != 0:
+                num = u - i
+                if a is None and num % 2 == 0:
+                    a = num
+                if b is None and num % 2 == 1:
+                    b = num
+            if a is not None and b is not None:
+                return abs(a - b)
+        raise ValueError('no odd elem')
+
+    @property
+    def delt2(self):
+        ddu = self.size - self.du + 2
+        if self.nu is None:
+            return ddu
+        return min(ddu, self.size - self.nu)
+
+    def d_i(self, u, v):
+        Eij = [
+            el % 2 for el in
+            self.last_col[self.niu(u):self.tau(u) + 1]
+        ]
+        if 0 not in Eij or 1 not in Eij:
+            print('wrong reg')
+            raise ValueError(Eij)
+        return self.size - v + u - 1 - self.tau(u) + min(
+            max(self.tau(u) - self.niu(u), 2),
+            self.delt2,
+            self.hi(u) + 2,
+        )
+
 
 # def ShiftRegisterMatrix(*col):
 def SRM(*col):
