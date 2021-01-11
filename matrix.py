@@ -273,6 +273,12 @@ class TernaryMatrix(SquareMatrix, MGP):
         for i, el in enumerate(self.last_col):
             if el == 2:
                 if i % 2 == 1:
+                    break
+        else:
+            return None
+        for i, el in enumerate(self.last_col):
+            if el == 2:
+                if i % 2 == 0:
                     return i
         return None
 
@@ -319,6 +325,21 @@ class TernaryMatrix(SquareMatrix, MGP):
                 return abs(a - b)
         raise ValueError('no odd elem')
 
+    def hi2(self, u):
+#        if u < self.nla:
+#            print('condition nla not met ', self.nla)
+#            raise ValueError(u)
+        a = self.tau(u)
+        for i, el in enumerate(reversed(self.last_col[:u + 1])):
+            if el != 0:
+                num = u - i
+                if num % 2 != a % 2 and el == 2:
+                    return a - num
+        return None
+
+    def ksi(self, u):
+        return self.tau(u) - self.niu(u)
+
     @property
     def delt2(self):
         ddu = self.size - self.du + 2
@@ -326,15 +347,29 @@ class TernaryMatrix(SquareMatrix, MGP):
             return ddu
         return min(ddu, self.size - self.nu)
 
-    def d_i(self, u, v):
-        Eij = [
-            el % 2 for el in
-            self.last_col[self.niu(u):self.tau(u) + 1]
+    def contains(self, u):
+        n_to_u = [
+            (u - i) % 2 for i, el in
+            enumerate(self.last_col[self.niu(u):u + 1])
+            if el != 0
         ]
-        if 0 not in Eij or 1 not in Eij:
-            print('wrong reg')
-            raise ValueError(Eij)
-        return self.size - v + u - 1 - self.tau(u) + min(
+        return 0 not in n_to_u or 1 not in n_to_u
+
+    def d_i(self, u, v):
+        base = self.size - v + u - 1 - self.tau(u)
+        if self.contains(u):
+            add = [
+                self.delt2,
+                self.hi(u) + 2,
+                self.ksi(u) + self.size - self.du,
+            ]
+            hdl = self.hi2(u)
+            if hdl is not None:
+                add.append(hdl)
+            print('does not contain')
+            return base + min(add)
+        print('contains')
+        return base + min(
             max(self.tau(u) - self.niu(u), 2),
             self.delt2,
             self.hi(u) + 2,
@@ -382,3 +417,9 @@ NUM = 24
 #        ShiftRegisterMatrix(*tuple(undelta(x, i, ran) for x in range(NUM)))
 
 
+def h(m, u, v):
+    m.test_local(m.d_i(u, v), u, v)
+
+def hdi(m, v):
+    for i in range(m.dla, m.nl + 1):
+        h(m, i, v)
