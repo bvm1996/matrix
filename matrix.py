@@ -404,10 +404,7 @@ class TernaryMatrix(SquareMatrix, MGP):
 
     def d_i(self, u, v):
         base = self.size - v + u - 1 - self.tau(u)
-        add = [self.delt2]
-        if u >= self.n0:
-            # add.append(max(self.ksi(u), 2))
-            add.append(self.hi(u) + self.eta(u))
+        add = [self.delt2, self.hi(u) + self.eta(u)]
         if not self.contains(u):
             if u >= self.n0:
                 add.append(self.ksi(u) + self.size - self.du)
