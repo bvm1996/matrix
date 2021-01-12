@@ -184,26 +184,26 @@ class TernaryMatrix(SquareMatrix, MGP):
         print('ok')
 
     @property
-    def last_col(self):
+    def reg(self):
         return list(self.cols)[-1]
 
-    def reg_state(self):
-        print('  '.join(map(str, self.last_col)))
+    def state(self):
+        print('  '.join(map(str, self.reg)))
         print(' '.join(map(
             lambda x: str(x[0]).ljust(2),
-            enumerate(self.last_col),
+            enumerate(self.reg),
         )))
 
     @property
     def nl(self):
-        for i, el in enumerate(reversed(self.last_col)):
+        for i, el in enumerate(reversed(self.reg)):
             if el == 2:
                 return self.size - 1 - i
         return None
 
     @property
     def n0(self):
-        for i, el in enumerate(self.last_col):
+        for i, el in enumerate(self.reg):
             if el == 2:
                 return i
         return None
@@ -215,17 +215,17 @@ class TernaryMatrix(SquareMatrix, MGP):
 
     @property
     def n(self):
-        return [el for el in self.last_col if el == 2]
+        return [el for el in self.reg if el == 2]
             
     @property
     def d(self):
-        return [el for el in self.last_col if el != 0]
+        return [el for el in self.reg if el != 0]
 
     @property
     def Ds(self):
         rv = [[] for _ in range(self.m)]
         i = -1
-        for num, el in enumerate(self.last_col):
+        for num, el in enumerate(self.reg):
             if el != 0:
                 i += 1
             rv[i].append(num)
@@ -235,7 +235,7 @@ class TernaryMatrix(SquareMatrix, MGP):
     def Es(self):
         rv = [[] for _ in range(self.l)]
         i = -1
-        for num, el in enumerate(self.last_col):
+        for num, el in enumerate(self.reg):
             if el == 2:
                 i += 1
             rv[i].append(num)
@@ -243,11 +243,11 @@ class TernaryMatrix(SquareMatrix, MGP):
 
     @property
     def E(self):
-        return [i for i, el in enumerate(self.last_col) if el == 2]
+        return [i for i, el in enumerate(self.reg) if el == 2]
 
     @property
     def D(self):
-        return [i for i, el in enumerate(self.last_col) if el != 1]
+        return [i for i, el in enumerate(self.reg) if el != 0]
 
     @property
     def l(self):
@@ -262,20 +262,20 @@ class TernaryMatrix(SquareMatrix, MGP):
         return self.size - self.nl
 
     def tau(self, u):
-        for i, el in enumerate(reversed(self.last_col[:u + 1])):
+        for i, el in enumerate(reversed(self.reg[:u + 1])):
             if el != 0:
                 return u - i
         return 0
 
     def niu(self, u):
-        for i, el in enumerate(reversed(self.last_col[:u + 1])):
+        for i, el in enumerate(reversed(self.reg[:u + 1])):
             if el == 2:
                 return u - i
         return self.nl
 
     @property
     def nu(self):
-        for i, el in enumerate(reversed(self.last_col)):
+        for i, el in enumerate(reversed(self.reg)):
             if el == 2:
                 num = self.size - 1 - i
                 if (self.size - num) % 2 == 1:
@@ -284,7 +284,7 @@ class TernaryMatrix(SquareMatrix, MGP):
 
     @property
     def du(self):
-        for i, el in enumerate(reversed(self.last_col)):
+        for i, el in enumerate(reversed(self.reg)):
             if el != 0:
                 num = self.size - 1 - i
                 if (self.size - num) % 2 == 1:
@@ -293,7 +293,7 @@ class TernaryMatrix(SquareMatrix, MGP):
 
     @property
     def dla(self):
-        for i, el in enumerate(self.last_col):
+        for i, el in enumerate(self.reg):
             if el != 0:
                 if i % 2 == 1:
                     return i
@@ -301,20 +301,19 @@ class TernaryMatrix(SquareMatrix, MGP):
 
     @property
     def nla(self):
-        for i, el in enumerate(self.last_col):
+        for i, el in enumerate(self.reg):
             if el == 2:
                 if i % 2 == 1:
                     break
         else:
             return None
-        for i, el in enumerate(self.last_col):
+        for i, el in enumerate(self.reg):
             if el == 2:
                 if i % 2 == 0:
                     return i
         return None
 
     def u_n_1(self, v):
-        # return 2 * self.size - v - max(self.du - 2, self.nu) - 2
         if self.check_primitive() is None:
             print('not prim')
             raise ValueError('non prim')
@@ -337,7 +336,7 @@ class TernaryMatrix(SquareMatrix, MGP):
         if u < self.dla:
             print('condition dla not met ', self.dla)
             raise ValueError(u)
-        els = self.last_col[:u + 1]
+        els = self.reg[:u + 1]
         a = None
         b = None
         for i, el in enumerate(reversed(els)):
@@ -352,21 +351,8 @@ class TernaryMatrix(SquareMatrix, MGP):
         raise ValueError('no odd elem')
 
     def hi2(self, u):
-#        if u < self.nla:
-#            print('condition nla not met ', self.nla)
-#            raise ValueError(u)
-
-#        n = self.niu(u - 1) if u == self.nl else self.niu(u)
-#        while n != self.nl:
-#            for i, el in enumerate(reversed(self.last_col[n:u + 1])):
-#                num = u - i
-#                if el % 2 != n % 2:
-#                    return num - n
-#            n = self.niu(n - 1)
-#        return None
-
         a = self.tau(u)
-        for i, el in enumerate(reversed(self.last_col[:u + 1])):
+        for i, el in enumerate(reversed(self.reg[:u + 1])):
             if el != 0:
                 num = u - i
                 if num % 2 != a % 2 and el == 2:
@@ -385,7 +371,7 @@ class TernaryMatrix(SquareMatrix, MGP):
     def contains(self, u):
         n_to_u = [
             (u - i) % 2 for i, el in
-            enumerate(self.last_col[self.niu(u):u + 1])
+            enumerate(self.reg[self.niu(u):u + 1])
             if el != 0
         ]
         return 0 in n_to_u and 1 in n_to_u
@@ -429,38 +415,17 @@ def SRM(*col):
     def delta(x, y):
         return 1 if y == x - 1 else 0
     
-    print('  '.join(map(str, col)))
-    print(' '.join(map(lambda x: str(x[0]).ljust(2), enumerate(col))))
     rows = []
     for i, last in enumerate(col):
-        row = tuple(delta(i, j) for j in range(size - 1)) + (last,)
-        rows.append(row)
+        rows.append(tuple(delta(i, j) for j in range(size - 1)) + (last,))
     matr = TernaryMatrix(rows)
+    matr.state()
     print(matr.size)
     matr.check()
-    # print(matr)
     return matr
 
 NUM = 24
             
-#if __name__ == '__main__':
-#    def delta(x, y, z):
-#        if x == 0: return 1
-#        elif x == z: return 1
-#        elif x == y != 0: return 2
-#        else: return 0
-#
-#    def undelta(x, y, z):
-#        if x == 0: return 2
-#        elif x == z: return 1
-#        elif x == y != 0: return 1
-#        else: return 0
-#
-#    for i in range(NUM - 5, NUM):
-#    # for i in range(5):
-#        ran = randint(1, NUM - 1)
-#        ShiftRegisterMatrix(*tuple(delta(x, i, ran) for x in range(NUM)))
-#        ShiftRegisterMatrix(*tuple(undelta(x, i, ran) for x in range(NUM)))
 
 def h(m, u, v):
     m.test_local(m.d_i(u, v), u, v)
