@@ -365,14 +365,6 @@ class TernaryMatrix(SquareMatrix, MGP):
             return ddu
         return min(ddu, self.size - self.nu)
 
-    def contains(self, u):
-        n_to_u = [
-            (u - i) % 2 for i, el in
-            enumerate(self.reg[self.niu(u):u + 1])
-            if el != 0
-        ]
-        return 0 in n_to_u and 1 in n_to_u
-
     def local_exp_2(self, u, v):
         if u < self.dla:
             printf('u < dla')
@@ -380,6 +372,7 @@ class TernaryMatrix(SquareMatrix, MGP):
         if u == self.size - 1:
             printf('u = n - 1')
             return self.u_n_1(v)
+        printf('dla <= u < n - 1')
         return self.d_i(u, v)
 
     @property
@@ -396,10 +389,6 @@ class TernaryMatrix(SquareMatrix, MGP):
     def d_i(self, u, v):
         base = self.size - v + u - 1 - self.tau(u)
         add = [self.delt2, self.hi(u) + self.eta(u)]
-        if self.contains(u):
-            printf('contains')
-        else:
-            printf('does not contain')
         if u >= self.n0:
             add.append(self.tau(u) - self.niu(u) + self.size - self.du)
         return base + min(add)
