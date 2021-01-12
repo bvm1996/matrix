@@ -222,24 +222,32 @@ class TernaryMatrix(SquareMatrix, MGP):
         return [el for el in self.last_col if el != 0]
 
     @property
-    def D(self):
-        Ds = [[] for _ in range(self.m)]
+    def Ds(self):
+        rv = [[] for _ in range(self.m)]
         i = -1
         for num, el in enumerate(self.last_col):
             if el != 0:
                 i += 1
-            Ds[i].append(num)
-        return Ds
+            rv[i].append(num)
+        return rv
 
     @property
-    def E(self):
-        Es = [[] for _ in range(self.l)]
+    def Es(self):
+        rv = [[] for _ in range(self.l)]
         i = -1
         for num, el in enumerate(self.last_col):
             if el == 2:
                 i += 1
-            Es[i].append(num)
-        return Es
+            rv[i].append(num)
+        return rv
+
+    @property
+    def E(self):
+        return [i for i, el in enumerate(self.last_col) if el == 2]
+
+    @property
+    def D(self):
+        return [i for i, el in enumerate(self.last_col) if el != 1]
 
     @property
     def l(self):
@@ -396,10 +404,9 @@ class TernaryMatrix(SquareMatrix, MGP):
         return max(self.local_exp_2(u, 0) for u in range(self.size))
 
     def eta(self, u):
-        if self.last_col[self.tau(u) - self.hi(u)] != 2:
-        # if self.tau(u) - self.hi(y) == self.niu(u):
+        if self.tau(u) - self.hi(u) not in self.E:
             return 2
-        if self.hi(u) == 1 and self.last_col[self.tau(u)] != 2:
+        if self.hi(u) == 1 and self.tau(u) not in self.E:
             return 1
         return 0
 
@@ -409,9 +416,6 @@ class TernaryMatrix(SquareMatrix, MGP):
         if not self.contains(u):
             if u >= self.n0:
                 add.append(self.ksi(u) + self.size - self.du)
-#            hdl = self.hi2(u)
-#            if hdl is not None:
-#                add.append(hdl)
             printf('does not contain')
             return base + min(add)
         printf('contains')
