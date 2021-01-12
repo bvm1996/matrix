@@ -329,7 +329,7 @@ class TernaryMatrix(SquareMatrix, MGP):
         base = self.size - v + u - self.tau(u) - 1
         add = [self.delt2]
         if u >= self.n0:
-            add.append(self.ksi(u) + self.size - self.du)
+            add.append(self.tau(u) - self.niu(u) + self.size - self.du)
         return base + min(add)
 
     def hi(self, u):
@@ -357,9 +357,6 @@ class TernaryMatrix(SquareMatrix, MGP):
                 num = u - i
                 if num % 2 != a % 2 and el == 2:
                     return a - num
-
-    def ksi(self, u):
-        return self.tau(u) - self.niu(u)
 
     @property
     def delt2(self):
@@ -399,12 +396,12 @@ class TernaryMatrix(SquareMatrix, MGP):
     def d_i(self, u, v):
         base = self.size - v + u - 1 - self.tau(u)
         add = [self.delt2, self.hi(u) + self.eta(u)]
-        if not self.contains(u):
-            if u >= self.n0:
-                add.append(self.ksi(u) + self.size - self.du)
+        if self.contains(u):
+            printf('contains')
+        else:
             printf('does not contain')
-            return base + min(add)
-        printf('contains')
+        if u >= self.n0:
+            add.append(self.tau(u) - self.niu(u) + self.size - self.du)
         return base + min(add)
 
 
