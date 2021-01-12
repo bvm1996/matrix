@@ -396,9 +396,10 @@ class TernaryMatrix(SquareMatrix, MGP):
         return max(self.local_exp_2(u, 0) for u in range(self.size))
 
     def eta(self, u):
-        if self.niu(u) != self.tau(u) - self.hi(u):
+        if self.last_col[self.tau(u) - self.hi(u)] != 2:
+        # if self.tau(u) - self.hi(y) == self.niu(u):
             return 2
-        if self.hi(u) == 1:
+        if self.hi(u) == 1 and self.last_col[self.tau(u)] != 2:
             return 1
         return 0
 
@@ -408,9 +409,9 @@ class TernaryMatrix(SquareMatrix, MGP):
         if not self.contains(u):
             if u >= self.n0:
                 add.append(self.ksi(u) + self.size - self.du)
-            hdl = self.hi2(u)
-            if hdl is not None:
-                add.append(hdl)
+#            hdl = self.hi2(u)
+#            if hdl is not None:
+#                add.append(hdl)
             printf('does not contain')
             return base + min(add)
         printf('contains')
