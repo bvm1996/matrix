@@ -374,13 +374,13 @@ class TernaryMatrix(SquareMatrix, MGP):
             return ddu
         return min(ddu, self.size - self.nu)
 
-    def does_not_contain(self, u):
+    def contains(self, u):
         n_to_u = [
             (u - i) % 2 for i, el in
             enumerate(self.last_col[self.niu(u):u + 1])
             if el != 0
         ]
-        return 0 not in n_to_u or 1 not in n_to_u
+        return 0 in n_to_u and 1 in n_to_u
 
     def local_exp_2(self, u, v):
         if u < self.dla:
@@ -404,11 +404,11 @@ class TernaryMatrix(SquareMatrix, MGP):
 
     def d_i(self, u, v):
         base = self.size - v + u - 1 - self.tau(u)
-        add = [self.delt2, self.hi(u) + 2]
+        add = [self.delt2]
         if u >= self.n0:
             # add.append(max(self.ksi(u), 2))
             add.append(self.hi(u) + self.eta(u))
-        if self.does_not_contain(u):
+        if not self.contains(u):
             if u >= self.n0:
                 add.append(self.ksi(u) + self.size - self.du)
             hdl = self.hi2(u)
