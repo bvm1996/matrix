@@ -310,11 +310,7 @@ class TernaryMatrix(SquareMatrix, MGP):
         if self.check_primitive() is None:
             print('not prim')
             raise ValueError('non prim')
-        n = self.size
-        # return 2 * n - v - max(self.du - self.delt, self.nu) - 2
-        if self.nu is None:
-            return 2 * self.size - v - self.du
-        return 2 * self.size - v - max(self.du - 2, self.nu) - 2
+        return self.size - v + self.delt2 - 2
 
     def o_dla(self, u, v):
         if u >= self.dla:
@@ -323,12 +319,11 @@ class TernaryMatrix(SquareMatrix, MGP):
         if self.check_primitive() is None:
             print('not prim')
             raise ValueError('non prim')
-        add = [self.tau(u) + self.du - 2]
-        if self.nu is not None:
-            add.append(self.tau(u) + self.nu)
-        if self.niu(u) < self.nl:
-            add.append(self.niu(u) + self.du)
-        return self.size * 2 - v + u - 1 - max(add)
+        base = self.size - v + u - self.tau(u) - 1
+        add = [self.delt2]
+        if u >= self.n0:
+            add.append(self.ksi(u) + self.size - self.du)
+        return base + min(add)
 
     def hi(self, u):
         if u < self.dla:
@@ -352,13 +347,22 @@ class TernaryMatrix(SquareMatrix, MGP):
 #        if u < self.nla:
 #            print('condition nla not met ', self.nla)
 #            raise ValueError(u)
+
+#        n = self.niu(u - 1) if u == self.nl else self.niu(u)
+#        while n != self.nl:
+#            for i, el in enumerate(reversed(self.last_col[n:u + 1])):
+#                num = u - i
+#                if el % 2 != n % 2:
+#                    return num - n
+#            n = self.niu(n - 1)
+#        return None
+
         a = self.tau(u)
         for i, el in enumerate(reversed(self.last_col[:u + 1])):
             if el != 0:
                 num = u - i
                 if num % 2 != a % 2 and el == 2:
                     return a - num
-        return None
 
     def ksi(self, u):
         return self.tau(u) - self.niu(u)
@@ -391,9 +395,19 @@ class TernaryMatrix(SquareMatrix, MGP):
     def exp_2(self):
         return max(self.local_exp_2(u, 0) for u in range(self.size))
 
+    def eta(self, u):
+        if self.niu(u) != self.tau(u) - self.hi(u):
+            return 2
+        if self.hi(u) == 1:
+            return 1
+        return 0
+
     def d_i(self, u, v):
         base = self.size - v + u - 1 - self.tau(u)
         add = [self.delt2, self.hi(u) + 2]
+        if u >= self.n0:
+            # add.append(max(self.ksi(u), 2))
+            add.append(self.hi(u) + self.eta(u))
         if self.does_not_contain(u):
             if u >= self.n0:
                 add.append(self.ksi(u) + self.size - self.du)
@@ -403,14 +417,7 @@ class TernaryMatrix(SquareMatrix, MGP):
             printf('does not contain')
             return base + min(add)
         printf('contains')
-        if u >= self.n0:
-            add.append(self.ksi(u) + 1)
         return base + min(add)
-            # max(self.tau(u) - self.niu(u), 2),
-#            max(self.ksi(u), 2),
-#            self.delt2,
-#            self.hi(u) + 2,
-#        )
 
 
 # def ShiftRegisterMatrix(*col):
